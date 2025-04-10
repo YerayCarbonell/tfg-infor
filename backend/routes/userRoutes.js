@@ -29,39 +29,42 @@ router.get("/me", authMiddleware, async (req, res) => {
 });
 
 // UPDATE - Actualizar perfil de usuario
+// UPDATE - Actualizar perfil de usuario
 router.put("/profile", authMiddleware, async (req, res) => {
-    try {
-      const { name, profile } = req.body;
-      const userId = req.user.id;
-  
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ msg: "Usuario no encontrado" });
-      }
-  
-      // Validar campos específicos según el rol
-      if (user.role === "musico" && profile) {
-        if (!profile.instrumentos || !profile.generos) {
-          return res.status(400).json({ msg: "Los músicos deben mantener instrumentos y géneros" });
-        }
-      }
-  
-      if (user.role === "organizador" && profile) {
-        if (!profile.local || !profile.tipoEventos) {
-          return res.status(400).json({ msg: "Los organizadores deben mantener local y tipos de eventos" });
-        }
-      }
-  
-      // Actualizar campos
-      if (name) user.name = name;
-      if (profile) user.profile = { ...user.profile, ...profile };
-  
-      await user.save();
-      res.json({ msg: "Perfil actualizado exitosamente", user });
-    } catch (err) {
-      res.status(500).json({ msg: "Error en el servidor", error: err.message });
+  try {
+    const { name, email, profile } = req.body; // Se incluye email
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: "Usuario no encontrado" });
     }
-  });
+
+    if (user.role === "musician" && profile) {
+      if (!profile.instruments?.length || !profile.genres?.length) {
+        return res.status(400).json({ msg: "Los músicos deben tener instrumentos y géneros musicales especificados" });
+      }
+    }
+    
+    if (user.role === "organizer" && profile) {
+      if (!profile.venueName || !profile.eventTypes?.length) {
+        return res.status(400).json({ msg: "Los organizadores deben tener nombre del local y tipos de eventos especificados" });
+      }
+    }
+
+    // Actualizar campos
+    if (name) user.name = name;
+    if (email) user.email = email; // Se actualiza el email si se envía
+
+    if (profile) user.profile = { ...user.profile, ...profile };
+
+    await user.save();
+    res.json({ msg: "Perfil actualizado exitosamente", user });
+  } catch (err) {
+    res.status(500).json({ msg: "Error en el servidor", error: err.message });
+  }
+});
+
 
 
 

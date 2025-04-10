@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
     if (req.query.ubicacion) filter.ubicacion = req.query.ubicacion;
     // Puedes agregar más filtros según necesites
 
-    const ofertas = await Oferta.find(filter).populate('organizador', 'name email profile.local');
+    const ofertas = await Oferta.find(filter).populate('organizer', 'name email profile.local');
     res.json(ofertas);
   } catch (err) {
     res.status(500).json({ mensaje: err.message });
@@ -34,7 +34,7 @@ router.get('/:id', getOferta, (req, res) => {
 // ===============================
 router.post('/', authMiddleware, async (req, res) => {
   // Se asume que el token contiene el id y role del usuario
-  if (req.user.role !== 'organizador') {
+  if (req.user.role !== 'organizer') {
     return res.status(403).json({ mensaje: 'Acceso denegado. No eres organizador.' });
   }
   const { titulo, descripcion, fechaEvento, genero, ubicacion } = req.body;
@@ -96,22 +96,27 @@ router.delete('/:id', authMiddleware, getOferta, async (req, res) => {
 // Postulación a una oferta (solo para músicos)
 // ===============================
 router.post('/:id/postular', authMiddleware, getOferta, async (req, res) => {
-  if (req.user.role !== 'musico') {
+  if (req.user.role !== 'musician') {
     return res.status(403).json({ mensaje: 'Acceso denegado. Solo músicos pueden postularse.' });
   }
-  // Verificar que el músico no haya postulado ya a esta oferta
+
   const yaPostulado = res.oferta.postulaciones.find(postulacion => postulacion.musico.toString() === req.user.id);
   if (yaPostulado) {
     return res.status(400).json({ mensaje: 'Ya has postulado a esta oferta.' });
   }
-  res.oferta.postulaciones.push({ musico: req.user.id, estado: 'pendiente' });
+
+  const { motivacion } = req.body;
+  res.oferta.postulaciones.push({ musico: req.user.id, estado: 'PENDIENTE', motivacion });
+
   try {
     const ofertaActualizada = await res.oferta.save();
-    res.json({ mensaje: 'Postulación realizada', oferta: ofertaActualizada });
+    res.status(201).json({ mensaje: 'Postulación realizada correctamente', oferta: ofertaActualizada });
   } catch (err) {
-    res.status(500).json({ mensaje: err.message });
+    console.error(err);
+    res.status(500).json({ mensaje: 'Error al procesar la postulación. Por favor, inténtalo de nuevo.' });
   }
 });
+
 
 // ===============================
 // Listar postulaciones de una oferta (solo para el organizador)

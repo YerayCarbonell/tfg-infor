@@ -19,12 +19,9 @@ app.use(express.json()); // Para leer JSON en las peticiones
 app.use(cors()); // Para permitir solicitudes desde el frontend
 
 // Conectar a MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-    .then(() => console.log("MongoDB conectada"))
-    .catch(err => console.error("Error conectando a MongoDB:", err));
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('Conexión a MongoDB exitosa'))
+  .catch(err => console.error('Error conectando a MongoDB:', err));
 
 // Ruta base
 app.get("/", (req, res) => {
@@ -38,6 +35,8 @@ const userRoutes = require("./routes/userRoutes");
 app.use("/api/users", userRoutes);
 const ofertasRouter = require('./routes/ofertasRoutes');
 app.use('/api/ofertas', ofertasRouter);
+const postulacionesRoutes = require('./routes/postulacionesRoutes');
+app.use('/api/postulaciones', postulacionesRoutes);
 const chatRoutes = require("./routes/chatRoutes");
 app.use("/api/chat", chatRoutes);
 
