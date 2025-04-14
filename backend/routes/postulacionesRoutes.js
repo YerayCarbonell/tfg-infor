@@ -20,14 +20,14 @@ router.post('/', authMiddleware, async (req, res) => {
     }
     
     // Verificar que no haya postulado ya
-    const yaPostulado = oferta.postulaciones.some(p => p.musico.toString() === req.user.id);
+    const yaPostulado = oferta.postulaciones.some(p => p.musician.toString() === req.user.id);
     if (yaPostulado) {
       return res.status(400).json({ mensaje: 'Ya has postulado a esta oferta.' });
     }
     
     // Añadir la postulación
     oferta.postulaciones.push({ 
-      musico: req.user.id, 
+      musician: req.user.id, 
       estado: 'PENDIENTE',
       motivacion,
       fechaPostulacion: new Date()
@@ -53,21 +53,24 @@ router.get('/usuario/:id', authMiddleware, async (req, res) => {
     
     // Buscar todas las ofertas donde el usuario tiene postulaciones
     const ofertas = await Oferta.find({
-      'postulaciones.musico': req.params.id
-    }).populate('organizer', 'name email profile');
+      'postulaciones.musician': req.params.id
+    }).populate('organizer', '_id name email profile');
     
     // Extraer solo las postulaciones del usuario
     const postulaciones = [];
     ofertas.forEach(oferta => {
       oferta.postulaciones.forEach(postulacion => {
-        if (postulacion.musico.toString() === req.params.id) {
+        if (postulacion.musician.toString() === req.params.id) {
           postulaciones.push({
             _id: postulacion._id,
             oferta: {
               _id: oferta._id,
               titulo: oferta.titulo,
               fechaEvento: oferta.fechaEvento,
-              organizador: oferta.organizador
+              organizer: {
+                _id: oferta.organizer._id,
+                name: oferta.organizer.name
+              }
             },
             estado: postulacion.estado,
             motivacion: postulacion.motivacion,
@@ -75,6 +78,7 @@ router.get('/usuario/:id', authMiddleware, async (req, res) => {
           });
         }
       });
+      
     });
     
     res.json(postulaciones);
@@ -100,7 +104,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     const postulacion = oferta.postulaciones.id(req.params.id);
     
     // Verificar que el usuario sea el dueño de la postulación
-    if (postulacion.musico.toString() !== req.user.id) {
+    if (postulacion.musician.toString() !== req.user.id) {
       return res.status(403).json({ mensaje: 'No autorizado para eliminar esta postulación' });
     }
     

@@ -15,6 +15,7 @@ router.get("/all", async (req, res) => {
   }
 });
 
+
 // Ruta protegida: Obtener información del usuario autenticado
 router.get("/me", authMiddleware, async (req, res) => {
   try {
@@ -32,7 +33,7 @@ router.get("/me", authMiddleware, async (req, res) => {
 // UPDATE - Actualizar perfil de usuario
 router.put("/profile", authMiddleware, async (req, res) => {
   try {
-    const { name, email, profile } = req.body; // Se incluye email
+    const { name, email, profile, multimedia } = req.body;
     const userId = req.user.id;
 
     const user = await User.findById(userId);
@@ -45,7 +46,7 @@ router.put("/profile", authMiddleware, async (req, res) => {
         return res.status(400).json({ msg: "Los músicos deben tener instrumentos y géneros musicales especificados" });
       }
     }
-    
+
     if (user.role === "organizer" && profile) {
       if (!profile.venueName || !profile.eventTypes?.length) {
         return res.status(400).json({ msg: "Los organizadores deben tener nombre del local y tipos de eventos especificados" });
@@ -54,9 +55,9 @@ router.put("/profile", authMiddleware, async (req, res) => {
 
     // Actualizar campos
     if (name) user.name = name;
-    if (email) user.email = email; // Se actualiza el email si se envía
-
+    if (email) user.email = email;
     if (profile) user.profile = { ...user.profile, ...profile };
+    if (multimedia) user.multimedia = { ...user.multimedia, ...multimedia };
 
     await user.save();
     res.json({ msg: "Perfil actualizado exitosamente", user });
@@ -66,6 +67,18 @@ router.put("/profile", authMiddleware, async (req, res) => {
 });
 
 
+// Ruta para obtener un usuario específico por ID
+router.get("/:id", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ msg: "Usuario no encontrado." });
+    }
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ msg: "Error en el servidor", error: err.message });
+  }
+});
 
 
 // DELETE - Eliminar usuario

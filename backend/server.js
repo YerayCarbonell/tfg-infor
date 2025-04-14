@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
+const path = require("path");
 
 // Configurar Express
 const app = express();
@@ -39,6 +40,11 @@ const postulacionesRoutes = require('./routes/postulacionesRoutes');
 app.use('/api/postulaciones', postulacionesRoutes);
 const chatRoutes = require("./routes/chatRoutes");
 app.use("/api/chat", chatRoutes);
+const eventoRoutes = require('./routes/eventoRoutes');
+app.use('/api/eventos', eventoRoutes); 
+app.use('/api', require('./routes/upload'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 // Configurar sockets para el chat
 io.on("connection", (socket) => {

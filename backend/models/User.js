@@ -20,9 +20,11 @@ const UserSchema = new mongoose.Schema({
     eventTypes: [String]
   },
   multimedia: {
+    profilePhoto: { type: String },
     fotos: [String],
     audio: [String]
   }
+  
 }, { timestamps: true });
 
 module.exports = mongoose.model("User", UserSchema);
