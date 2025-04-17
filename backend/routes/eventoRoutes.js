@@ -60,57 +60,56 @@ router.get('/historial/organizador', authMiddleware, async (req, res) => {
 // Historial de eventos para músicos
 router.get('/historial/musico', authMiddleware, async (req, res) => {
   try {
-    // Verificar que el usuario es músico
     if (req.user.role !== 'musician') {
       return res.status(403).json({ mensaje: 'Acceso denegado. No eres músico.' });
     }
-    
-    // Buscar ofertas donde el músico tiene una postulación aceptada
+
     const hoy = new Date();
+    
+    // Buscar todas las ofertas que tengan alguna postulación del usuario
     const ofertas = await Oferta.find({
-      'postulaciones.musician': req.user.id,
-      'postulaciones.estado': 'ACEPTADA',
-      $or: [
-        { estado: 'CERRADA' },
-        { fechaEvento: { $lt: hoy } }
-      ]
+      'postulaciones.musician': req.user.id
     })
-    .populate('organizer', 'name email profile')
-    .sort({ fechaEvento: -1 });
-    
-    // Transformar los datos para mostrar eventos
-    const eventos = ofertas.map(oferta => {
-      // Encontrar la postulación específica del músico actual
-      const postulacion = oferta.postulaciones.find(
-        p => p.musician.toString() === req.user.id && p.estado === 'ACEPTADA'
-      );
-      
-      return {
-        _id: oferta._id,
-        titulo: oferta.titulo,
-        descripcion: oferta.descripcion,
-        fechaEvento: oferta.fechaEvento,
-        ubicacion: oferta.ubicacion,
-        genero: oferta.genero,
-        estado: oferta.estado,
-        fechaCreacion: oferta.fechaCreacion,
-        organizador: {
-          _id: oferta.organizer._id,
-          name: oferta.organizer.name,
-          email: oferta.organizer.email,
-          profile: oferta.organizer.profile
-        },
-        calificado: postulacion ? postulacion.calificado : false,
-        fechaPostulacion: postulacion ? postulacion.fechaPostulacion : null
-      };
-    });
-    
+      .populate('organizer', 'name email profile')
+      .sort({ fechaEvento: -1 });
+
+    const eventos = ofertas
+      .map(oferta => {
+        // Encontrar la postulación aceptada de este músico
+        const postulacion = oferta.postulaciones.find(
+          p => p.musician.toString() === req.user.id && p.estado === 'ACEPTADA'
+        );
+
+        if (!postulacion) return null; // no mostrar si no fue aceptado
+
+        return {
+          _id: oferta._id,
+          titulo: oferta.titulo,
+          descripcion: oferta.descripcion,
+          fechaEvento: oferta.fechaEvento,
+          ubicacion: oferta.ubicacion,
+          genero: oferta.genero,
+          estado: oferta.estado,
+          fechaCreacion: oferta.fechaCreacion,
+          organizador: {
+            _id: oferta.organizer._id,
+            name: oferta.organizer.name,
+            email: oferta.organizer.email,
+            profile: oferta.organizer.profile
+          },
+          calificado: postulacion.calificado || false,
+          fechaPostulacion: postulacion.fechaPostulacion || null
+        };
+      })
+      .filter(evento => evento !== null); // eliminar los eventos sin postulación aceptada
+
     res.json(eventos);
   } catch (err) {
     console.error('Error al obtener historial:', err);
     res.status(500).json({ mensaje: 'Error al obtener el historial de eventos.' });
   }
 });
+
 
 // Calificar un evento (para músicos)
 router.post('/:id/calificar', authMiddleware, async (req, res) => {

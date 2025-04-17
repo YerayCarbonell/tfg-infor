@@ -3,7 +3,8 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const auth = require("../middlewares/auth"); // Importar el middleware de autenticación
+const auth = require("../middlewares/auth");
+const { sendWelcomeEmail } = require('../services/emailService');
 
 const router = express.Router();
 
@@ -31,6 +32,9 @@ router.post("/register", async (req, res) => {
       });
   
       await newUser.save();
+
+      await sendWelcomeEmail(email, name);
+
   
       // Crear token JWT para autenticación automática después del registro
       const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: "7d" });

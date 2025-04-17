@@ -3,6 +3,7 @@ const router = express.Router();
 const Oferta = require('../models/Oferta');
 const authMiddleware = require('../middlewares/auth');
 const getOferta = require('../middlewares/getOferta');
+const User = require('../models/User');
 
 // Listar ofertas con filtros opcionales
 router.get('/', async (req, res) => {
@@ -21,6 +22,35 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/recomendadas', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    console.log('Usuario encontrado:', user); // 👈 Log para verificar el usuario
+
+    if (!user || user.role !== 'musician') {
+      return res.status(403).json({ mensaje: 'Solo músicos pueden ver recomendaciones.' });
+    }
+
+    if (!user.profile || !Array.isArray(user.profile.genres)) {
+      console.log('Perfil inválido:', user.profile); // 👈 Log del perfil
+      return res.status(400).json({ mensaje: 'Tu perfil no tiene géneros musicales configurados.' });
+    }
+
+    const generosMusico = user.profile.genres;
+    console.log('Géneros del músico:', generosMusico); // 👈 Log de géneros
+
+    const ofertas = await Oferta.find({
+      estado: 'ABIERTA',
+      genero: { $in: generosMusico }
+    }).populate('organizer', 'name profile');
+
+    console.log('Ofertas encontradas:', ofertas); // 👈 Log de ofertas
+    res.json(ofertas);
+  } catch (err) {
+    console.error('Error en /ofertas/recomendadas:', err); // 👈 Este log es clave
+    res.status(500).json({ mensaje: 'Error al obtener recomendaciones.' });
+  }
+});
 
 // Obtener una oferta por ID
 router.get('/:id', async (req, res) => {
@@ -303,6 +333,7 @@ router.post('/:id/postulaciones/:postulacionId/aceptar', authMiddleware, getOfer
     res.status(500).json({ mensaje: 'Error al procesar la solicitud' });
   }
 });
+
 
 
 // Rechazar una postulación
