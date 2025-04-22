@@ -5,7 +5,7 @@ const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
-
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 // Configurar Express
 const app = express();
 const server = http.createServer(app); // Crear servidor con HTTP
@@ -44,6 +44,14 @@ const eventoRoutes = require('./routes/eventoRoutes');
 app.use('/api/eventos', eventoRoutes); 
 app.use('/api', require('./routes/upload'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+const ratingRoutes = require('./routes/ratingRoutes');
+app.use('/api/ratings', ratingRoutes);
+
+
+// En server.js añade:
+const pagoRoutes = require('./routes/pagoRoutes');
+app.use('/api/pagos', pagoRoutes);
 
 
 // Configurar sockets para el chat

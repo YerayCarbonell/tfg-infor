@@ -31,6 +31,7 @@ router.get("/me", authMiddleware, async (req, res) => {
 
 // UPDATE - Actualizar perfil de usuario
 // UPDATE - Actualizar perfil de usuario
+// Modificación para el router.put("/profile") en userRoutes.js
 router.put("/profile", authMiddleware, async (req, res) => {
   try {
     const { name, email, profile, multimedia } = req.body;
@@ -41,14 +42,23 @@ router.put("/profile", authMiddleware, async (req, res) => {
       return res.status(404).json({ msg: "Usuario no encontrado" });
     }
 
+    // Solo validar los campos de perfil si se están actualizando específicamente
     if (user.role === "musician" && profile) {
-      if (!profile.instruments?.length || !profile.genres?.length) {
+      // Comprobar si estamos intentando actualizar instrumentos o géneros específicamente
+      // Si los campos ya existen en el usuario y no se están modificando, no validar
+      if (
+        (profile.hasOwnProperty('instruments') && (!profile.instruments?.length)) ||
+        (profile.hasOwnProperty('genres') && (!profile.genres?.length))
+      ) {
         return res.status(400).json({ msg: "Los músicos deben tener instrumentos y géneros musicales especificados" });
       }
     }
 
     if (user.role === "organizer" && profile) {
-      if (!profile.venueName || !profile.eventTypes?.length) {
+      if (
+        (profile.hasOwnProperty('venueName') && (!profile.venueName)) ||
+        (profile.hasOwnProperty('eventTypes') && (!profile.eventTypes?.length))
+      ) {
         return res.status(400).json({ msg: "Los organizadores deben tener nombre del local y tipos de eventos especificados" });
       }
     }
@@ -56,16 +66,44 @@ router.put("/profile", authMiddleware, async (req, res) => {
     // Actualizar campos
     if (name) user.name = name;
     if (email) user.email = email;
-    if (profile) user.profile = { ...user.profile, ...profile };
-    if (multimedia) user.multimedia = { ...user.multimedia, ...multimedia };
+    
+    // Actualizar campos del perfil de manera segura
+    if (profile) {
+      // Asegurarse de que user.profile exista
+      if (!user.profile) user.profile = {};
+      
+      // Actualizar cada campo del perfil de manera individual
+      Object.keys(profile).forEach(key => {
+        // Para tarifa, necesitamos un manejo especial
+        if (key === 'tarifa') {
+          user.profile.tarifa = {
+            ...user.profile.tarifa || {},  // Preservar valores existentes
+            ...profile.tarifa              // Actualizar con nuevos valores
+          };
+        } else {
+          user.profile[key] = profile[key];
+        }
+      });
+    }
+    
+    // Actualizar multimedia
+    if (multimedia) {
+      // Asegurarse de que user.multimedia exista
+      if (!user.multimedia) user.multimedia = {};
+      
+      // Actualizar cada campo de multimedia
+      Object.keys(multimedia).forEach(key => {
+        user.multimedia[key] = multimedia[key];
+      });
+    }
 
     await user.save();
     res.json({ msg: "Perfil actualizado exitosamente", user });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ msg: "Error en el servidor", error: err.message });
   }
 });
-
 
 // Ruta para obtener un usuario específico por ID
 router.get("/:id", authMiddleware, async (req, res) => {

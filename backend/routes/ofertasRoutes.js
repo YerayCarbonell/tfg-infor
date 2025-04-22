@@ -56,7 +56,8 @@ router.get('/recomendadas', authMiddleware, async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const oferta = await Oferta.findById(req.params.id)
-      .populate('organizer', 'name email profile');
+      .populate('organizer', 'name email profile')
+      .populate('postulaciones.musician', 'name profile');
     
     if (!oferta) {
       return res.status(404).json({ mensaje: 'Oferta no encontrada.' });

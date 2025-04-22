@@ -13,6 +13,10 @@ const UserSchema = new mongoose.Schema({
     genres: [String],
     instruments: [String],
     experience: { type: String },
+    tarifa: { 
+      monto: { type: Number }, 
+      descripcion: { type: String } // "Por hora", "Por evento", etc.
+    },
     // Organizador
     venueName: { type: String },
     venueType: { type: String },
